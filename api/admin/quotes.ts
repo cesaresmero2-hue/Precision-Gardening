@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import jwt from "jsonwebtoken";
-import { getQuotes, saveQuotes } from "../db";
+import { getQuotes, saveQuotes } from "../db.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -36,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         if (req.method === "POST") {
-            const { action, quoteId, updatedData } = req.body;
+            const { action, quoteId, updatedData } = req.body || {};
             let targetQuote = quotes.find(q => q.id === quoteId);
 
             if (!targetQuote) {

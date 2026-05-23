@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { getBookings, saveBookings, Booking } from "./db";
+import { getBookings, saveBookings, Booking } from "./db.js";
 
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -15,7 +15,7 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { fullName, phone, email, serviceType, date, timeSlot, message } = req.body;
+    const { fullName, phone, email, serviceType, date, timeSlot, message } = req.body || {};
 
     if (!fullName || !phone || !email || !serviceType || !date || !timeSlot) {
       return res.status(400).json({ error: "Missing required fields" });

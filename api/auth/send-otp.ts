@@ -15,13 +15,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { email } = req.body;
+  const { email } = req.body || {};
   if (!email) {
     return res.status(400).json({ error: "Email is required" });
   }
 
-  // Retrieve admin recipient email, defaulting to cesar's or placeholder
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@precisionexterior.com";
+  const adminEmail = process.env.ADMIN_EMAIL || "cesaresmero2@gmail.com";
 
   if (email.toLowerCase().trim() !== adminEmail.toLowerCase().trim()) {
     return res.status(401).json({ error: "Access denied: Unauthorized email address" });

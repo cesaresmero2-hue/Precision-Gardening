@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { code, signature, expiry } = req.body;
+  const { code, signature, expiry } = req.body || {};
   if (!code || !signature || !expiry) {
     return res.status(400).json({ error: "Missing verification parameters" });
   }
@@ -40,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const token = jwt.sign(
     {
       role: "admin",
-      email: process.env.ADMIN_EMAIL || "admin@precisionexterior.com"
+      email: process.env.ADMIN_EMAIL || "cesaresmero2@gmail.com"
     },
     secret,
     { expiresIn: "7d" }
