@@ -1,6 +1,38 @@
 {
   "name": "Precision Gardening & Power Washing",
-  "description": "Professional gardening and power washing services keeping outdoor spaces healthy, clean, and beautiful.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "description": "Local gardening and power washing services. We handle lawn care, hedge trimming, garden cleanups, and high-pressure washing for driveways, patios, and exterior surfaces. Get a free quote online — fast response, professional results.",
+  "shortDescription": "Professional garden care & power washing. Free quotes online.",
+  "category": "HOME_SERVICES",
+  "tags": [
+    "gardening",
+    "lawn care",
+    "power washing",
+    "pressure washing",
+    "outdoor cleaning",
+    "garden maintenance",
+    "local services"
+  ],
+  "requestFramePermissions": [
+    "GEOLOCATION"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ],
+  "minorCapabilities": [
+    "MINOR_CAPABILITY_CONTACT_FORM",
+    "MINOR_CAPABILITY_QUOTE_REQUEST",
+    "MINOR_CAPABILITY_RESPONSIVE_DESIGN"
+  ],
+  "targetAudience": "Homeowners and property managers looking for reliable, local outdoor maintenance services.",
+  "primaryCTA": "Get a Free Quote",
+  "locale": "en-GB",
+  "serviceArea": "Local residential and commercial properties",
+  "seoKeywords": [
+    "gardening services near me",
+    "power washing near me",
+    "lawn care",
+    "driveway cleaning",
+    "garden maintenance",
+    "pressure washing service"
+  ]
 }
