@@ -14,6 +14,17 @@ export interface Booking {
   createdAt: string;
 }
 
+export interface QuoteRequest {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  service: string;
+  message: string;
+  status: "Pending" | "Reviewed" | "Responded";
+  createdAt: string;
+}
+
 export enum OperationType {
   CREATE = "create",
   UPDATE = "update",
@@ -103,6 +114,106 @@ export async function getFirestoreDb() {
   })();
 
   return dbPromise;
+}
+
+let inMemoryQuotes: QuoteRequest[] = [];
+
+export async function getQuotes(): Promise<{ quotes: QuoteRequest[]; isFallback: boolean }> {
+  const db = await getFirestoreDb();
+  if (db) {
+    try {
+      const { collection, getDocs } = await import("firebase/firestore");
+      const querySnapshot = await getDocs(collection(db, "quotes"));
+      const quotes: QuoteRequest[] = [];
+      querySnapshot.forEach((docSnap) => {
+        quotes.push(docSnap.data() as QuoteRequest);
+      });
+      quotes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      return { quotes, isFallback: false };
+    } catch (error) {
+      handleFirestoreError(error, OperationType.GET, "quotes");
+    }
+  }
+
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+
+  if (url && token) {
+    try {
+      const res = await fetch(`${url}/get/quotes`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.result) {
+          const parsed = JSON.parse(data.result);
+          if (Array.isArray(parsed)) {
+            return { quotes: parsed, isFallback: false };
+          }
+        }
+      }
+    } catch (e) {
+      console.error("KV fetch error for quotes:", e);
+    }
+  }
+
+  return { quotes: inMemoryQuotes, isFallback: true };
+}
+
+export async function saveQuotes(quotes: QuoteRequest[]): Promise<boolean> {
+  const db = await getFirestoreDb();
+  if (db) {
+    try {
+      const { doc, getDocs, collection, writeBatch } = await import("firebase/firestore");
+      const querySnapshot = await getDocs(collection(db, "quotes"));
+      const existingIds = querySnapshot.docs.map(d => d.id);
+      const newIds = new Set(quotes.map(q => q.id));
+
+      const batch = writeBatch(db);
+
+      for (const quote of quotes) {
+        const quoteRef = doc(db, "quotes", quote.id);
+        batch.set(quoteRef, quote);
+      }
+
+      for (const existingId of existingIds) {
+        if (!newIds.has(existingId)) {
+          const quoteRef = doc(db, "quotes", existingId);
+          batch.delete(quoteRef);
+        }
+      }
+
+      await batch.commit();
+      return true;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, "quotes");
+      return false;
+    }
+  }
+
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+
+  if (url && token) {
+    try {
+      const res = await fetch(`${url}/set/quotes`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(JSON.stringify(quotes))
+      });
+      if (res.ok) {
+        return true;
+      }
+    } catch (e) {
+      console.error("KV save error for quotes:", e);
+    }
+  }
+
+  inMemoryQuotes = quotes;
+  return true;
 }
 
 export async function getBookings(): Promise<{ bookings: Booking[]; isFallback: boolean }> {

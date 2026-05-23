@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { getQuotes, saveQuotes, QuoteRequest } from "./db";
 
 export default async function handler(req: any, res: any) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -24,6 +25,21 @@ export default async function handler(req: any, res: any) {
     const resendApiKey = process.env.RESEND_API_KEY;
 
     const referenceId = "PRC-Q" + Math.floor(100000 + Math.random() * 900000);
+
+    const newQuote: QuoteRequest = {
+      id: referenceId,
+      name: fullName,
+      phone,
+      email,
+      service: serviceType,
+      message: message || "",
+      status: "Pending",
+      createdAt: new Date().toISOString(),
+    };
+
+    const { quotes } = await getQuotes();
+    quotes.unshift(newQuote);
+    const dbSaved = await saveQuotes(quotes);
 
     let emailSentSuccessfully = false;
 
