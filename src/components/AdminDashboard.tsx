@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Lock, Key, Mail, LogOut, CheckCircle2, XCircle, AlertCircle, 
-  Trash2, Search, Download, Calendar, Clock, DollarSign, 
+import {
+  Lock, Key, Mail, LogOut, CheckCircle2, XCircle, AlertCircle,
+  Trash2, Search, Download, Calendar, Clock, DollarSign,
   TrendingUp, Sparkles, RefreshCw, ChevronRight, User, Phone, Edit2, Check, X
 } from "lucide-react";
 
@@ -15,6 +15,17 @@ interface Booking {
   timeSlot: string;
   message: string;
   status: "Pending" | "Confirmed" | "Completed" | "Cancelled";
+  createdAt: string;
+}
+
+interface QuoteRequest {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  service: string;
+  message: string;
+  status: "Pending" | "Reviewed" | "Responded";
   createdAt: string;
 }
 
@@ -38,6 +49,8 @@ export default function AdminDashboard() {
 
   // Dashboard states
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [quotes, setQuotes] = useState<QuoteRequest[]>([]);
+  const [activeTab, setActiveTab] = useState<"bookings" | "quotes">("bookings");
   const [isFallback, setIsFallback] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -117,6 +130,15 @@ export default function AdminDashboard() {
         throw new Error(data.error || "Failed to load bookings");
       }
       setBookings(data.bookings || []);
+
+      const qRes = await fetch("/api/admin/quotes", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const qData = await qRes.json();
+      if (qRes.ok) {
+        setQuotes(qData.quotes || []);
+      }
+
       setIsFallback(data.isFallback || false);
       setStep("dashboard");
     } catch (err: any) {
@@ -220,7 +242,7 @@ export default function AdminDashboard() {
       b.createdAt
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + [headers.join(","), ...rows.map(e => e.map(val => `"${val.replace(/"/g, '""')}"`).join(","))].join("\n");
 
     const encodedUri = encodeURI(csvContent);
@@ -242,9 +264,9 @@ export default function AdminDashboard() {
 
   // Filtering
   const filteredBookings = bookings.filter(b => {
-    const matchesSearch = b.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          b.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          b.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = b.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      b.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === "All" || b.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -255,11 +277,11 @@ export default function AdminDashboard() {
       {(!token || step !== "dashboard") && (
         <div className="flex min-h-screen items-center justify-center p-4">
           <div className="w-full max-w-md bg-white border border-primary/5 shadow-2xl rounded-2xl p-8 relative overflow-hidden">
-            
+
             {/* Design accents */}
             <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary to-accent-blue" />
             <div className="absolute -right-16 -top-16 w-32 h-32 bg-primary/5 rounded-full" />
-            
+
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center p-3 rounded-full bg-primary/5 text-primary mb-4 border border-primary/10">
                 <Lock className="w-6 h-6" />
@@ -363,7 +385,7 @@ export default function AdminDashboard() {
       {/* Main Admin Dashboard View */}
       {token && step === "dashboard" && (
         <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-          
+
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between border-b border-gray-200 pb-6 mb-8 gap-4">
             <div>
@@ -373,9 +395,9 @@ export default function AdminDashboard() {
               </div>
               <h1 className="text-3xl font-serif font-bold text-emerald-950 mt-1">Crew Schedule & Bookings</h1>
             </div>
-            
+
             <div className="flex items-center space-x-3">
-              <button 
+              <button
                 onClick={fetchBookings}
                 disabled={loading}
                 className="flex items-center space-x-1.5 px-3.5 py-2.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-700 hover:bg-gray-50 transition duration-150 cursor-pointer"
@@ -383,8 +405,8 @@ export default function AdminDashboard() {
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
                 <span>Sync</span>
               </button>
-              
-              <button 
+
+              <button
                 onClick={handleLogout}
                 className="flex items-center space-x-1.5 px-3.5 py-2.5 bg-red-50 text-red-700 rounded-lg text-xs font-bold hover:bg-red-100 transition duration-150 cursor-pointer"
               >
@@ -412,225 +434,372 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* KPI Dashboard Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-[10px] uppercase font-bold tracking-widest font-mono text-gray-400">Total Bookings</span>
-                <h3 className="text-2xl font-serif font-bold text-gray-900 mt-1">{totalBookings}</h3>
-              </div>
-              <div className="p-3 bg-gray-50 text-gray-500 rounded-lg">
-                <Calendar className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-[10px] uppercase font-bold tracking-widest font-mono text-gray-400">Pending Approval</span>
-                <h3 className="text-2xl font-serif font-bold text-amber-600 mt-1">{pendingJobs}</h3>
-              </div>
-              <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
-                <Clock className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-[10px] uppercase font-bold tracking-widest font-mono text-gray-400">Confirmed Jobs</span>
-                <h3 className="text-2xl font-serif font-bold text-emerald-800 mt-1">{confirmedJobs}</h3>
-              </div>
-              <div className="p-3 bg-green-50 text-emerald-800 rounded-lg">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-[10px] uppercase font-bold tracking-widest font-mono text-gray-400">Projected Pipeline</span>
-                <h3 className="text-2xl font-serif font-bold text-accent-blue mt-1">${projectedRevenue}</h3>
-              </div>
-              <div className="p-3 bg-blue-50 text-accent-blue rounded-lg">
-                <DollarSign className="w-5 h-5" />
-              </div>
-            </div>
+          {/* Navigation Tabs */}
+          <div className="flex border-b border-gray-200 mb-8 space-x-8">
+            <button
+              onClick={() => setActiveTab("bookings")}
+              className={`pb-4 text-sm font-bold transition-all relative ${activeTab === "bookings" ? "text-emerald-950" : "text-gray-500 hover:text-gray-800"
+                }`}
+            >
+              Service Bookings
+              {activeTab === "bookings" && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-t-full" />
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab("quotes")}
+              className={`pb-4 text-sm font-bold transition-all relative ${activeTab === "quotes" ? "text-emerald-950" : "text-gray-500 hover:text-gray-800"
+                }`}
+            >
+              Quote Requests
+              {activeTab === "quotes" && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-t-full" />
+              )}
+            </button>
           </div>
 
-          {/* Filtering and Search Actions */}
-          <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by customer name, reference ID, or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-xs"
-              />
-            </div>
+          {activeTab === "bookings" && (
+            <>
+              {/* KPI Dashboard Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest font-mono text-gray-400">Total Bookings</span>
+                    <h3 className="text-2xl font-serif font-bold text-gray-900 mt-1">{totalBookings}</h3>
+                  </div>
+                  <div className="p-3 bg-gray-50 text-gray-500 rounded-lg">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center space-x-1.5">
-                <span className="text-xs text-gray-500 font-medium">Status:</span>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
-                >
-                  <option value="All">All Statuses</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Confirmed">Confirmed</option>
-                  <option value="Completed">Completed</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
+                <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest font-mono text-gray-400">Pending Approval</span>
+                    <h3 className="text-2xl font-serif font-bold text-amber-600 mt-1">{pendingJobs}</h3>
+                  </div>
+                  <div className="p-3 bg-amber-50 text-amber-600 rounded-lg">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest font-mono text-gray-400">Confirmed Jobs</span>
+                    <h3 className="text-2xl font-serif font-bold text-emerald-800 mt-1">{confirmedJobs}</h3>
+                  </div>
+                  <div className="p-3 bg-green-50 text-emerald-800 rounded-lg">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                </div>
+
+                <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-widest font-mono text-gray-400">Projected Pipeline</span>
+                    <h3 className="text-2xl font-serif font-bold text-accent-blue mt-1">${projectedRevenue}</h3>
+                  </div>
+                  <div className="p-3 bg-blue-50 text-accent-blue rounded-lg">
+                    <DollarSign className="w-5 h-5" />
+                  </div>
+                </div>
               </div>
 
-              <button 
-                onClick={handleExportCSV}
-                className="flex items-center space-x-1 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-emerald-950 transition duration-150 cursor-pointer shadow-sm"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Export CSV</span>
-              </button>
-            </div>
-          </div>
+              {/* Filtering and Search Actions */}
+              <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by customer name, reference ID, or email..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-xs"
+                  />
+                </div>
 
-          {/* Data Grid Table */}
-          <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto border-collapse text-left">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-mono uppercase tracking-widest text-gray-400 font-bold">
-                    <th className="px-6 py-4">Reference ID</th>
-                    <th className="px-6 py-4">Customer Details</th>
-                    <th className="px-6 py-4">Service Needed</th>
-                    <th className="px-6 py-4">Schedule Slots</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-xs">
-                  {filteredBookings.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-12 text-gray-400">
-                        No bookings match your current criteria.
-                      </td>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center space-x-1.5">
+                    <span className="text-xs text-gray-500 font-medium">Status:</span>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="All">All Statuses</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={handleExportCSV}
+                    className="flex items-center space-x-1 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-emerald-950 transition duration-150 cursor-pointer shadow-sm"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Export CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Data Grid Table */}
+              <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full table-auto border-collapse text-left">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-100 text-[10px] font-mono uppercase tracking-widest text-gray-400 font-bold">
+                        <th className="px-6 py-4">Reference ID</th>
+                        <th className="px-6 py-4">Customer Details</th>
+                        <th className="px-6 py-4">Service Needed</th>
+                        <th className="px-6 py-4">Schedule Slots</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 text-xs">
+                      {filteredBookings.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-12 text-gray-400">
+                            No bookings match your current criteria.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredBookings.map((b) => (
+                          <tr key={b.id} className="hover:bg-gray-50/50 transition">
+                            <td className="px-6 py-4 font-mono font-bold text-gray-900">
+                              {b.id}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="font-bold text-gray-900">{b.name}</div>
+                              <div className="text-[10px] text-gray-400 mt-0.5 flex flex-col space-y-0.5">
+                                <span className="flex items-center"><Phone className="w-2.5 h-2.5 mr-1" /> {b.phone}</span>
+                                <span className="flex items-center"><Mail className="w-2.5 h-2.5 mr-1" /> {b.email}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="font-semibold text-emerald-950">{b.service}</div>
+                              <div className="text-[10px] text-gray-400 mt-0.5">
+                                Est: ${SERVICE_ESTIMATES[b.service] || 150}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center font-medium text-gray-800">
+                                <Calendar className="w-3.5 h-3.5 mr-1 text-gray-400" />
+                                {b.date}
+                              </div>
+                              <div className="flex items-center text-[10px] text-gray-400 mt-1">
+                                <Clock className="w-3.5 h-3.5 mr-1 text-gray-400" />
+                                {b.timeSlot}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${b.status === "Pending" ? "bg-amber-50 text-amber-700 border border-amber-200" :
+                                  b.status === "Confirmed" ? "bg-green-50 text-green-700 border border-green-200" :
+                                    b.status === "Completed" ? "bg-blue-50 text-blue-700 border border-blue-200" :
+                                      "bg-red-50 text-red-700 border border-red-200"
+                                }`}>
+                                {b.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end space-x-2">
+                                {b.status === "Pending" && (
+                                  <button
+                                    onClick={() => handleUpdateStatus(b.id, "Confirmed")}
+                                    className="p-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition"
+                                    title="Approve Booking"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+
+                                {b.status === "Confirmed" && (
+                                  <button
+                                    onClick={() => handleUpdateStatus(b.id, "Completed")}
+                                    className="p-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition"
+                                    title="Mark Completed"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+
+                                {b.status !== "Cancelled" && b.status !== "Completed" && (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setRescheduleTarget(b);
+                                        setNewDate(b.date);
+                                        setNewSlot(b.timeSlot);
+                                      }}
+                                      className="p-1.5 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition"
+                                      title="Reschedule Booking"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleUpdateStatus(b.id, "Cancelled")}
+                                      className="p-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition"
+                                      title="Cancel Booking"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
+                                )}
+
+                                <button
+                                  onClick={() => handleDeleteBooking(b.id)}
+                                  className="p-1.5 bg-white text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition"
+                                  title="Delete Booking"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Notes display */}
+              {filteredBookings.some(b => b.message) && (
+                <div className="mt-8 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+                  <h3 className="text-xs uppercase font-mono font-bold tracking-widest text-gray-400 mb-3">Service Notes</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredBookings.filter(b => b.message).map(b => (
+                      <div key={b.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-xs">
+                        <div className="flex items-center justify-between mb-1.5 font-semibold text-emerald-950">
+                          <span>{b.name} ({b.id})</span>
+                          <span className="text-[10px] text-gray-400">{b.service}</span>
+                        </div>
+                        <p className="text-gray-600 italic">"{b.message}"</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === "quotes" && (
+            <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                <h3 className="font-serif font-bold text-emerald-950 flex items-center">
+                  <Mail className="w-4 h-4 mr-2" /> Digital Quote Requests ({quotes.length})
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs whitespace-nowrap">
+                  <thead>
+                    <tr className="bg-white/50 border-b border-gray-100 uppercase tracking-wider text-[10px] font-bold text-gray-500">
+                      <th className="px-5 py-3 font-mono">Quotation ID</th>
+                      <th className="px-5 py-3">Lead Data</th>
+                      <th className="px-5 py-3">Service Objective</th>
+                      <th className="px-5 py-3">Timestamp</th>
+                      <th className="px-5 py-3">Phase</th>
+                      <th className="px-5 py-3 pr-6 text-right">Actions</th>
                     </tr>
-                  ) : (
-                    filteredBookings.map((b) => (
-                      <tr key={b.id} className="hover:bg-gray-50/50 transition">
-                        <td className="px-6 py-4 font-mono font-bold text-gray-900">
-                          {b.id}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-gray-900">{b.name}</div>
-                          <div className="text-[10px] text-gray-400 mt-0.5 flex flex-col space-y-0.5">
-                            <span className="flex items-center"><Phone className="w-2.5 h-2.5 mr-1" /> {b.phone}</span>
-                            <span className="flex items-center"><Mail className="w-2.5 h-2.5 mr-1" /> {b.email}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-semibold text-emerald-950">{b.service}</div>
-                          <div className="text-[10px] text-gray-400 mt-0.5">
-                            Est: ${SERVICE_ESTIMATES[b.service] || 150}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center font-medium text-gray-800">
-                            <Calendar className="w-3.5 h-3.5 mr-1 text-gray-400" />
-                            {b.date}
-                          </div>
-                          <div className="flex items-center text-[10px] text-gray-400 mt-1">
-                            <Clock className="w-3.5 h-3.5 mr-1 text-gray-400" />
-                            {b.timeSlot}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                            b.status === "Pending" ? "bg-amber-50 text-amber-700 border border-amber-200" :
-                            b.status === "Confirmed" ? "bg-green-50 text-green-700 border border-green-200" :
-                            b.status === "Completed" ? "bg-blue-50 text-blue-700 border border-blue-200" :
-                            "bg-red-50 text-red-700 border border-red-200"
-                          }`}>
-                            {b.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            {b.status === "Pending" && (
-                              <button
-                                onClick={() => handleUpdateStatus(b.id, "Confirmed")}
-                                className="p-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition"
-                                title="Approve Booking"
-                              >
-                                <Check className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-
-                            {b.status === "Confirmed" && (
-                              <button
-                                onClick={() => handleUpdateStatus(b.id, "Completed")}
-                                className="p-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition"
-                                title="Mark Completed"
-                              >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-
-                            {b.status !== "Cancelled" && b.status !== "Completed" && (
-                              <>
-                                <button
-                                  onClick={() => {
-                                    setRescheduleTarget(b);
-                                    setNewDate(b.date);
-                                    setNewSlot(b.timeSlot);
-                                  }}
-                                  className="p-1.5 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition"
-                                  title="Reschedule Booking"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-
-                                <button
-                                  onClick={() => handleUpdateStatus(b.id, "Cancelled")}
-                                  className="p-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition"
-                                  title="Cancel Booking"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </>
-                            )}
-
-                            <button
-                              onClick={() => handleDeleteBooking(b.id)}
-                              className="p-1.5 bg-white text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition"
-                              title="Delete Booking"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {quotes.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-5 py-8 text-center text-gray-400 italic font-medium">
+                          No active quote requests in the pipeline.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          
-          {/* Notes display */}
-          {filteredBookings.some(b => b.message) && (
-            <div className="mt-8 bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
-              <h3 className="text-xs uppercase font-mono font-bold tracking-widest text-gray-400 mb-3">Service Notes</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredBookings.filter(b => b.message).map(b => (
-                  <div key={b.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100 text-xs">
-                    <div className="flex items-center justify-between mb-1.5 font-semibold text-emerald-950">
-                      <span>{b.name} ({b.id})</span>
-                      <span className="text-[10px] text-gray-400">{b.service}</span>
-                    </div>
-                    <p className="text-gray-600 italic">"{b.message}"</p>
-                  </div>
-                ))}
+                    ) : (
+                      quotes.map(q => (
+                        <tr key={q.id} className="hover:bg-gray-50/70 transition duration-150">
+                          <td className="px-5 py-3.5">
+                            <span className="font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded text-[10px] tracking-tight">{q.id}</span>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <div className="font-bold text-emerald-950 mb-0.5 text-sm">{q.name}</div>
+                            <div className="flex items-center space-x-3 text-[10px] text-gray-500 font-medium">
+                              <a href={`tel:${q.phone}`} className="flex items-center hover:text-green-600 transition">
+                                <Phone className="w-3 w-3 mr-1" /> {q.phone}
+                              </a>
+                              <a href={`mailto:${q.email}`} className="flex items-center hover:text-blue-600 transition">
+                                <Mail className="w-3 h-3 mr-1" /> {q.email}
+                              </a>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 font-bold text-gray-700">{q.service}</td>
+                          <td className="px-5 py-3.5 font-mono text-[10px] text-gray-500 font-medium">
+                            {new Date(q.createdAt).toLocaleString(undefined, {
+                              year: 'numeric', month: 'short', day: 'numeric',
+                              hour: '2-digit', minute: '2-digit'
+                            })}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${q.status === 'Responded' ? 'bg-green-50 text-green-700 border-green-200' :
+                                q.status === 'Reviewed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                  'bg-amber-50 text-amber-700 border-amber-200'
+                              }`}>
+                              {q.status}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5 pr-6 text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              {q.status === "Pending" && (
+                                <button
+                                  onClick={async () => {
+                                    if (!token) return;
+                                    await fetch("/api/admin/quotes", {
+                                      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                                      body: JSON.stringify({ action: "update-status", quoteId: q.id, updatedData: { status: "Reviewed" } })
+                                    });
+                                    if (token) fetchBookings();
+                                  }}
+                                  className="p-1.5 bg-white border border-gray-200 text-blue-600 hover:text-white rounded-lg hover:bg-blue-600 transition cursor-pointer"
+                                  title="Mark as Reviewed"
+                                >
+                                  <AlertCircle className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+
+                              {q.status !== "Responded" && (
+                                <button
+                                  onClick={async () => {
+                                    if (!token) return;
+                                    await fetch("/api/admin/quotes", {
+                                      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                                      body: JSON.stringify({ action: "update-status", quoteId: q.id, updatedData: { status: "Responded" } })
+                                    });
+                                    if (token) fetchBookings();
+                                  }}
+                                  className="p-1.5 bg-white border border-gray-200 text-green-600 hover:text-white rounded-lg hover:bg-green-600 transition cursor-pointer"
+                                  title="Mark as Responded"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+
+                              <button
+                                onClick={async () => {
+                                  if (!confirm("Are you sure you want to delete this quote request?")) return;
+                                  if (!token) return;
+                                  await fetch("/api/admin/quotes", {
+                                    method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                                    body: JSON.stringify({ action: "delete", quoteId: q.id })
+                                  });
+                                  if (token) fetchBookings();
+                                }}
+                                className="p-1.5 bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 rounded-lg transition cursor-pointer"
+                                title="Delete Quote"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -643,7 +812,7 @@ export default function AdminDashboard() {
           <div className="w-full max-w-sm bg-white rounded-xl shadow-2xl p-6 relative">
             <h3 className="text-lg font-serif font-bold text-emerald-950 mb-1">Reschedule Job</h3>
             <p className="text-xs text-gray-500 mb-4">Adjust scheduling parameters for {rescheduleTarget.name} ({rescheduleTarget.id}).</p>
-            
+
             <form onSubmit={handleRescheduleSubmit} className="space-y-4">
               <div>
                 <label className="block text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-1">New Date</label>

@@ -63,7 +63,7 @@ async function startServer() {
             }
 
             const resend = getResendClient();
-            const adminEmail = process.env.ADMIN_EMAIL || "quotes@precisionexterior.com";
+            const adminEmail = process.env.ADMIN_EMAIL || "cesaresmero2@gmail.com";
 
             if (resend) {
                 // Rich HTML email template for the dispatch manager/admin
@@ -203,7 +203,7 @@ async function startServer() {
             const dbSaved = await saveBookings(bookings);
 
             const resend = getResendClient();
-            const adminEmail = process.env.ADMIN_EMAIL || "bookings@precisionexterior.com";
+            const adminEmail = process.env.ADMIN_EMAIL || "cesaresmero2@gmail.com";
 
             if (resend) {
                 // Rich HTML email template for the dispatch manager/admin

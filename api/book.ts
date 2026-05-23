@@ -14,53 +14,54 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { fullName, phone, email, serviceType, date, timeSlot, message } = req.body;
+  try {
+    const { fullName, phone, email, serviceType, date, timeSlot, message } = req.body;
 
-  if (!fullName || !phone || !email || !serviceType || !date || !timeSlot) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
+    if (!fullName || !phone || !email || !serviceType || !date || !timeSlot) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
 
-  const referenceId = "PRC-" + Math.floor(100000 + Math.random() * 900000);
+    const referenceId = "PRC-" + Math.floor(100000 + Math.random() * 900000);
 
-  const newBooking: Booking = {
-    id: referenceId,
-    name: fullName,
-    phone,
-    email,
-    service: serviceType,
-    date,
-    timeSlot,
-    message: message || "",
-    status: "Pending",
-    createdAt: new Date().toISOString(),
-  };
+    const newBooking: Booking = {
+      id: referenceId,
+      name: fullName,
+      phone,
+      email,
+      service: serviceType,
+      date,
+      timeSlot,
+      message: message || "",
+      status: "Pending",
+      createdAt: new Date().toISOString(),
+    };
 
-  const { bookings } = await getBookings();
-  bookings.unshift(newBooking);
-  const dbSaved = await saveBookings(bookings);
+    const { bookings } = await getBookings();
+    bookings.unshift(newBooking);
+    const dbSaved = await saveBookings(bookings);
 
-  const adminEmail = process.env.ADMIN_EMAIL || "cesaresmero2@gmail.com";
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const siteUrl = process.env.SITE_URL || "https://precisionexterior.com";
+    const adminEmail = process.env.ADMIN_EMAIL || "cesaresmero2@gmail.com";
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const siteUrl = process.env.SITE_URL || "https://precisionexterior.com";
 
-  let emailSentSuccessfully = false;
+    let emailSentSuccessfully = false;
 
-  if (!resendApiKey) {
-    console.warn("Skipping email: RESEND_API_KEY missing.");
-  } else {
-    try {
-      const resend = new Resend(resendApiKey);
+    if (!resendApiKey) {
+      console.warn("Skipping email: RESEND_API_KEY missing.");
+    } else {
+      try {
+        const resend = new Resend(resendApiKey);
 
-      // DEMO MODE: Resend free tier only allows sending to your own verified email.
-      // Both admin alert AND customer confirmation go to adminEmail.
-      // TODO: swap customer confirmation `to: adminEmail` → `to: email` after domain verification.
+        // DEMO MODE: Resend free tier only allows sending to your own verified email.
+        // Both admin alert AND customer confirmation go to adminEmail.
+        // TODO: swap customer confirmation `to: adminEmail` → `to: email` after domain verification.
 
-      // 1. Admin booking alert
-      await resend.emails.send({
-        from: "Precision Bookings <onboarding@resend.dev>",
-        to: adminEmail,
-        subject: `📅 New Booking: ${referenceId} — ${fullName}`,
-        html: `
+        // 1. Admin booking alert
+        await resend.emails.send({
+          from: "Precision Bookings <onboarding@resend.dev>",
+          to: adminEmail,
+          subject: `📅 New Booking: ${referenceId} — ${fullName}`,
+          html: `
           <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
             <div style="background-color: #1b3a2d; padding: 16px 24px; border-radius: 8px 8px 0 0; margin: -24px -24px 24px -24px;">
               <h2 style="font-size: 18px; font-weight: bold; color: #ffffff; margin: 0;">📅 New Booking Request</h2>
@@ -110,15 +111,15 @@ export default async function handler(req: any, res: any) {
             </div>
           </div>
         `,
-      });
+        });
 
-      // 2. Customer confirmation — DEMO: sending to adminEmail instead of `email`
-      // TODO: swap `to: adminEmail` → `to: email` once you verify your domain in Resend
-      await resend.emails.send({
-        from: "Precision Bookings <onboarding@resend.dev>",
-        to: adminEmail, // <-- change to `email` after domain verification
-        subject: `[DEMO - Customer Copy] 📅 Booking Request: ${referenceId}`,
-        html: `
+        // 2. Customer confirmation — DEMO: sending to adminEmail instead of `email`
+        // TODO: swap `to: adminEmail` → `to: email` once you verify your domain in Resend
+        await resend.emails.send({
+          from: "Precision Bookings <onboarding@resend.dev>",
+          to: adminEmail, // <-- change to `email` after domain verification
+          subject: `[DEMO - Customer Copy] 📅 Booking Request: ${referenceId}`,
+          html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
             <div style="background-color: #f59e0b; color: #1c1917; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 12px;">
               <p style="margin: 0; font-size: 11px; font-weight: bold;">⚠️ DEMO MODE — This email would normally go to: ${email}</p>
@@ -156,28 +157,32 @@ export default async function handler(req: any, res: any) {
             <p style="margin-top: 30px; font-size: 14px; font-weight: bold; color: #1c1917;">Warm regards,<br><span style="font-weight: normal; color: #475569;">The Precision Care Dispatcher</span></p>
           </div>
         `
-      });
+        });
 
-      emailSentSuccessfully = true;
+        emailSentSuccessfully = true;
 
-    } catch (err) {
-      console.error("Resend error in book handler:", err);
-      // Don't return 500 — booking was already saved to DB. Email failure ≠ booking failure.
+      } catch (err) {
+        console.error("Resend error in book handler:", err);
+        // Don't return 500 — booking was already saved to DB. Email failure ≠ booking failure.
+      }
     }
+
+    console.log(`\n--- [BOOKING SUBMITTED] ---`);
+    console.log(`Reference: ${referenceId}`);
+    console.log(`Customer:  ${fullName} (${email})`);
+    console.log(`Schedule:  ${date} @ ${timeSlot}`);
+    console.log(`DB Saved:  ${dbSaved ? "Yes (KV)" : "Yes (In-memory fallback)"}`);
+    console.log(`Emails Dispatched: ${emailSentSuccessfully ? "Yes" : "No"}`);
+    console.log(`---------------------------\n`);
+
+    return res.status(200).json({
+      success: true,
+      referenceId,
+      dbSaved,
+      emailSent: emailSentSuccessfully
+    });
+  } catch (err: any) {
+    console.error("Booking handler error:", err);
+    return res.status(500).json({ error: "Failed to process booking" });
   }
-
-  console.log(`\n--- [BOOKING SUBMITTED] ---`);
-  console.log(`Reference: ${referenceId}`);
-  console.log(`Customer:  ${fullName} (${email})`);
-  console.log(`Schedule:  ${date} @ ${timeSlot}`);
-  console.log(`DB Saved:  ${dbSaved ? "Yes (KV)" : "Yes (In-memory fallback)"}`);
-  console.log(`Emails Dispatched: ${emailSentSuccessfully ? "Yes" : "No"}`);
-  console.log(`---------------------------\n`);
-
-  return res.status(200).json({
-    success: true,
-    referenceId,
-    dbSaved,
-    emailSent: emailSentSuccessfully
-  });
 }
