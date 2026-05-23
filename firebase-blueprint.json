@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "Booking": {
+      "title": "Booking",
+      "description": "Details of a scheduled gardening or power washing appointment.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Formally generated unique reference ID (e.g. PRC-B123456)" },
+        "name": { "type": "string", "description": "Full name of the client" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "email": { "type": "string", "description": "Contact email address" },
+        "service": { "type": "string", "description": "Type of service requested" },
+        "date": { "type": "string", "description": "Requested date of the service (YYYY-MM-DD)" },
+        "timeSlot": { "type": "string", "description": "Preferred time slot (e.g. Morning (8AM - 12PM))" },
+        "message": { "type": "string", "description": "Any additional notes or instructions" },
+        "status": { "type": "string", "enum": ["Pending", "Confirmed", "Completed", "Cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "phone", "email", "service", "date", "timeSlot", "status", "createdAt"]
+    },
+    "Quote": {
+      "title": "Quote",
+      "description": "Details of a digital quote request.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Formally generated unique reference ID (e.g. PRC-Q123456)" },
+        "name": { "type": "string", "description": "Full name of the lead" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "email": { "type": "string", "description": "Contact email address" },
+        "service": { "type": "string", "description": "Type of service requested" },
+        "message": { "type": "string", "description": "Any custom property specifications or message" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "phone", "email", "service", "createdAt"]
+    }
+  },
+  "firestore": {
+    "bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Collection of landscaping, gardening and powerwashing appointments."
+    },
+    "quotes/{quoteId}": {
+      "schema": "Quote",
+      "description": "Collection of property quote requests."
+    }
+  }
+}

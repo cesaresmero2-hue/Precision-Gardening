@@ -1,0 +1,6 @@
+{
+  "name": "Precision Gardening & Power Washing",
+  "description": "Professional gardening and power washing services keeping outdoor spaces healthy, clean, and beautiful.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1b3a2d;        /* Deep forest green */
+  --color-primary-light: #2c5140;  /* Lighter forest green */
+  --color-cream: #f4efe6;          /* Elegant off-white cream background */
+  --color-cream-light: #faf7f2;    /* Lighter off-white cream background */
+  --color-accent-blue: #1e6fa8;    /* Pressure-jet blue */
+  --color-accent-blue-light: #288cd2; /* Lighter jet blue */
+  --color-dark-slate: #16241d;     /* Dark accent green-black */
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* Custom scrollbar and general smoothing */
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-sans);
+  background-color: var(--color-cream);
+}
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Draggable before/after slider specific styles */
+.ba-slider-handle {
+  touch-action: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

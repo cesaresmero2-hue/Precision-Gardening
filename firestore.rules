@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Catch-all default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable global security helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Authenticate by checking if the user UID exists in the /admins collection
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll(['id', 'name', 'phone', 'email', 'service', 'date', 'timeSlot', 'message', 'status', 'createdAt'])
+        && data.keys().size() == 10
+        && data.id is string && data.id.size() <= 50
+        && data.name is string && data.name.size() <= 100
+        && data.phone is string && data.phone.size() <= 50
+        && data.email is string && data.email.size() <= 100
+        && data.service is string && data.service.size() <= 100
+        && data.date is string && data.date.size() <= 20
+        && data.timeSlot is string && data.timeSlot.size() <= 50
+        && data.message is string && data.message.size() <= 5000
+        && data.status is string && (data.status == 'Pending' || data.status == 'Confirmed' || data.status == 'Completed' || data.status == 'Cancelled')
+        && data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidQuote(data) {
+      return data.keys().hasAll(['id', 'name', 'phone', 'email', 'service', 'message', 'createdAt'])
+        && data.keys().size() == 7
+        && data.id is string && data.id.size() <= 50
+        && data.name is string && data.name.size() <= 100
+        && data.phone is string && data.phone.size() <= 50
+        && data.email is string && data.email.size() <= 100
+        && data.service is string && data.service.size() <= 100
+        && data.message is string && data.message.size() <= 5000
+        && data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // Bookings Collection Rules
+    match /bookings/{bookingId} {
+      allow create: if isValidId(bookingId) 
+        && isValidBooking(request.resource.data)
+        && request.resource.data.status == 'Pending';
+
+      // Updates and reads are fully restricted to Administrators
+      allow get, list, update, delete: if isAdmin();
+    }
+
+    // Quotes Collection Rules
+    match /quotes/{quoteId} {
+      allow create: if isValidId(quoteId) 
+        && isValidQuote(request.resource.data);
+
+      // Only administrators can retrieve or clean up Quote leads
+      allow get, list, delete: if isAdmin();
+    }
+
+    // Admins Helper Collection
+    match /admins/{adminId} {
+      allow read, write: if false; // Managed securely from Firebase Console
+    }
+  }
+}
