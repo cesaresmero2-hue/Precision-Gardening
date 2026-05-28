@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import { Resend } from "resend";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import { getBookings, saveBookings, getQuotes, saveQuotes } from "./src/api/db.js";
+import { getBookings, saveBookings, getQuotes, saveQuotes } from "../src/api/db.js";
 
 dotenv.config();
 
@@ -446,9 +446,16 @@ async function startServer() {
             console.log(`[Precision Server] Listening for queries on port ${PORT}`);
         });
     } else {
-        const distPath = path.join(process.cwd(), "dist");
-        app.use(express.static(distPath));
-        app.get("*", (req, res) => {
+        // In production/Vercel, serve static files from dist directory
+        const distPath = path.resolve(process.cwd(), "dist");
+        app.use(express.static(distPath, { index: false }));
+        
+        // SPA fallback - serve index.html for all non-API routes
+        app.get("*", (req, res, next) => {
+            // Don't intercept API routes
+            if (req.path.startsWith("/api")) {
+                return next();
+            }
             res.sendFile(path.join(distPath, "index.html"));
         });
     }
@@ -457,4 +464,7 @@ async function startServer() {
 // Export for Vercel serverless function
 export default app;
 
-startServer();
+// Only start the server if not running in Vercel
+if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+    startServer();
+}
