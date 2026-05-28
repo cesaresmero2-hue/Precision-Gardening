@@ -56,6 +56,7 @@ async function startServer() {
 
             const resend = getResendClient();
             const adminEmail = process.env.ADMIN_EMAIL || "cesaresmero2@gmail.com";
+            const sadminEmail = process.env.SADMIN_EMAIL;
 
             if (resend) {
                 const adminEmailHtml = `
@@ -88,7 +89,10 @@ async function startServer() {
           </div>
         `;
 
+                const adminRecipients = sadminEmail ? [adminEmail, sadminEmail] : [adminEmail];
+
                 try {
+                    // Send to primary admin
                     await resend.emails.send({
                         from: "Precision Exterior <onboarding@resend.dev>",
                         to: adminEmail,
@@ -96,6 +100,22 @@ async function startServer() {
                         html: adminEmailHtml,
                         replyTo: email
                     });
+                    
+                    // Send to secondary admin if configured
+                    if (sadminEmail && sadminEmail !== adminEmail) {
+                        try {
+                            await resend.emails.send({
+                                from: "Precision Exterior <onboarding@resend.dev>",
+                                to: sadminEmail,
+                                subject: `[Quote Form] ${serviceType} - ${fullName}`,
+                                html: adminEmailHtml,
+                                replyTo: email
+                            });
+                        } catch (sadminError) {
+                            console.error("Failed to send quote notification to SADMIN_EMAIL:", sadminError);
+                        }
+                    }
+                    
                     try {
                         await resend.emails.send({
                             from: "Precision Exterior <onboarding@resend.dev>",
@@ -152,12 +172,44 @@ async function startServer() {
 
             const resend = getResendClient();
             const adminEmail = process.env.ADMIN_EMAIL || "cesaresmero2@gmail.com";
+            const sadminEmail = process.env.SADMIN_EMAIL;
 
             if (resend) {
-                const adminEmailHtml = `<p>New Booking from ${fullName} for ${serviceType} on ${date} at ${timeSlot}</p>`;
-                const userEmailHtml = `<p>Hi ${fullName}, your booking request for ${date} is received and pending approval.</p>`;
+                const adminEmailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #1b3a2d; border-radius: 8px; background-color: #fafbf9;">
+            <div style="background-color: #1b3a2d; color: #f5f0e8; padding: 15px; border-radius: 6px; text-align: center;">
+              <h2 style="margin: 0; font-size: 20px; font-weight: bold; letter-spacing: 0.5px;">New Service Booking Request</h2>
+              <p style="margin: 5px 0 0 0; font-size: 11px; opacity: 0.85; font-family: monospace;">Ref ID: ${referenceId}</p>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+              <tr style="background-color: #f3f5f3;"><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; font-size: 13px; color: #64748b; text-transform: uppercase;">Customer Name:</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: bold; color: #1e293b;">${fullName}</td></tr>
+              <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; font-size: 13px; color: #64748b; text-transform: uppercase;">Phone Number:</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 14px;"><a href="tel:${phone}" style="color: #16a34a; font-weight: bold; text-decoration: none;">${phone}</a></td></tr>
+              <tr style="background-color: #f3f5f3;"><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; font-size: 13px; color: #64748b; text-transform: uppercase;">Email Address:</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 14px;"><a href="mailto:${email}" style="color: #1e6fa8; font-weight: bold; text-decoration: none;">${email}</a></td></tr>
+              <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; font-size: 13px; color: #64748b; text-transform: uppercase;">Service Type:</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: bold; color: #1e6fa8;">${serviceType}</td></tr>
+              <tr style="background-color: #f3f5f3;"><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; font-size: 13px; color: #64748b; text-transform: uppercase;">Scheduled Date:</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: bold; color: #1e293b;">${date}</td></tr>
+              <tr><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; font-size: 13px; color: #64748b; text-transform: uppercase;">Time Slot:</td><td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-size: 14px; font-weight: bold; color: #1e293b;">${timeSlot}</td></tr>
+            </table>
+            ${message ? `<div style="margin-top: 20px; padding: 15px; background-color: #ffffff; border-left: 4px solid #1b3a2d; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <h3 style="margin-top: 0; color: #1b3a2d; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Additional Notes</h3>
+              <p style="white-space: pre-wrap; margin-bottom: 0; font-size: 13.5px; line-height: 1.5; color: #334155;">${message}</p>
+            </div>` : ''}
+          </div>
+        `;
+
+                const userEmailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background-color: #ffffff;">
+            <div style="background-color: #1b3a2d; color: #f5f0e8; padding: 20px; border-radius: 6px; text-align: center; margin-bottom: 20px;">
+              <h1 style="margin: 0; font-size: 22px; font-weight: bold;">Booking Request Received</h1>
+              <p style="margin: 5px 0 0 0; font-size: 12px; font-family: monospace; opacity: 0.9;">Ticket ID: ${referenceId}</p>
+            </div>
+            <p style="font-size: 15px; color: #334155;">Hello ${fullName},</p>
+            <p style="font-size: 15px; color: #334155; line-height: 1.6;">Your booking request for <strong>${serviceType}</strong> on <strong>${date}</strong> at <strong>${timeSlot}</strong> has been received and is pending approval.</p>
+            <p style="font-size: 15px; color: #334155; line-height: 1.6;">We will contact you shortly to confirm your appointment.</p>
+          </div>
+        `;
 
                 try {
+                    // Send to primary admin
                     await resend.emails.send({
                         from: "Precision Bookings <onboarding@resend.dev>",
                         to: adminEmail,
@@ -165,6 +217,22 @@ async function startServer() {
                         html: adminEmailHtml,
                         replyTo: email
                     });
+                    
+                    // Send to secondary admin if configured
+                    if (sadminEmail && sadminEmail !== adminEmail) {
+                        try {
+                            await resend.emails.send({
+                                from: "Precision Bookings <onboarding@resend.dev>",
+                                to: sadminEmail,
+                                subject: `[Booking Form] ${serviceType} on ${date} - ${fullName}`,
+                                html: adminEmailHtml,
+                                replyTo: email
+                            });
+                        } catch (sadminError) {
+                            console.error("Failed to send booking notification to SADMIN_EMAIL:", sadminError);
+                        }
+                    }
+                    
                     try {
                         await resend.emails.send({
                             from: "Precision Bookings <onboarding@resend.dev>",
@@ -172,8 +240,12 @@ async function startServer() {
                             subject: `Precision Scheduling - ${referenceId}`,
                             html: userEmailHtml
                         });
-                    } catch (error) { }
-                } catch (err) { }
+                    } catch (error) {
+                        console.error("User confirmation email could not be sent (Resend sandbox constraints):", error);
+                    }
+                } catch (err) {
+                    console.error("Failed to execute email triggers:", err);
+                }
             }
 
             return res.status(200).json({ status: "success", referenceId });
