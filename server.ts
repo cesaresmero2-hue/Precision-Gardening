@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 import { Resend } from "resend";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import { getBookings, saveBookings, Booking, getQuotes, saveQuotes, QuoteRequest } from "./src/api/db.js";
+import { getBookings, saveBookings, getQuotes, saveQuotes } from "./src/api/db.js";
 
 dotenv.config();
 
@@ -42,7 +42,7 @@ async function startServer() {
             const referenceId = "PRC-Q" + Math.floor(100000 + Math.random() * 900000);
 
             const { quotes } = await getQuotes();
-            const newQuote: QuoteRequest = {
+            const newQuote = {
                 id: referenceId,
                 name: fullName,
                 phone,
@@ -154,7 +154,7 @@ async function startServer() {
 
             const referenceId = "PRC-B" + Math.floor(100000 + Math.random() * 900000);
 
-            const newBooking: Booking = {
+            const newBooking = {
                 id: referenceId,
                 name: fullName,
                 phone,
