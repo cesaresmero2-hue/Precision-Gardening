@@ -9,9 +9,10 @@ import { getBookings, saveBookings, Booking, getQuotes, saveQuotes, QuoteRequest
 
 dotenv.config();
 
+const app = express();
+const PORT = 3000;
+
 async function startServer() {
-    const app = express();
-    const PORT = 3000;
 
     app.use(express.json());
 
@@ -440,6 +441,10 @@ async function startServer() {
             appType: "spa",
         });
         app.use(vite.middlewares);
+
+        app.listen(PORT, "0.0.0.0", () => {
+            console.log(`[Precision Server] Listening for queries on port ${PORT}`);
+        });
     } else {
         const distPath = path.join(process.cwd(), "dist");
         app.use(express.static(distPath));
@@ -447,10 +452,9 @@ async function startServer() {
             res.sendFile(path.join(distPath, "index.html"));
         });
     }
-
-    app.listen(PORT, "0.0.0.0", () => {
-        console.log(`[Precision Server] Listening for queries on port ${PORT}`);
-    });
 }
+
+// Export for Vercel serverless function
+export default app;
 
 startServer();
