@@ -5,7 +5,6 @@ import dotenv from "dotenv";
 import { Resend } from "resend";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import { getBookings, saveBookings, getQuotes, saveQuotes } from "../src/api/db.js";
 
 dotenv.config();
 
@@ -39,20 +38,6 @@ app.post("/api/quote", async (req, res) => {
         console.log(`[Quote Request] Received from ${fullName} (${email}) for service "${serviceType}"`);
 
         const referenceId = "PRC-Q" + Math.floor(100000 + Math.random() * 900000);
-
-        const { quotes } = await getQuotes();
-        const newQuote = {
-            id: referenceId,
-            name: fullName,
-            phone,
-            email,
-            service: serviceType,
-            message: message || "",
-            status: "Pending",
-            createdAt: new Date().toISOString()
-        };
-        quotes.unshift(newQuote);
-        await saveQuotes(quotes);
 
         const resend = getResendClient();
         const adminEmail = process.env.ADMIN_EMAIL || "cesaresmero2@gmail.com";
@@ -152,23 +137,6 @@ app.post("/api/book", async (req, res) => {
         console.log(`[Booking Request] Received from ${fullName} on ${date} (${timeSlot})`);
 
         const referenceId = "PRC-B" + Math.floor(100000 + Math.random() * 900000);
-
-        const newBooking = {
-            id: referenceId,
-            name: fullName,
-            phone,
-            email,
-            service: serviceType,
-            date,
-            timeSlot,
-            message: message || "",
-            status: "Pending",
-            createdAt: new Date().toISOString(),
-        };
-
-        const { bookings } = await getBookings();
-        bookings.unshift(newBooking);
-        await saveBookings(bookings);
 
         const resend = getResendClient();
         const adminEmail = process.env.ADMIN_EMAIL || "cesaresmero2@gmail.com";
@@ -358,78 +326,7 @@ const authenticateAdmin = (req: any, res: any, next: any) => {
     }
 };
 
-/** Admin Booking List */
-app.get("/api/admin/bookings", authenticateAdmin, async (req, res) => {
-    try {
-        const { bookings, isFallback } = await getBookings();
-        return res.status(200).json({ bookings, isFallback });
-    } catch (err: any) {
-        return res.status(500).json({ error: err.message || "Failed to retrieve bookings list." });
-    }
-});
-
-/** Admin Booking Actions */
-app.post("/api/admin/bookings", authenticateAdmin, async (req, res) => {
-    try {
-        const { action, bookingId, updatedData } = req.body || {};
-        if (!action || !bookingId) return res.status(400).json({ error: "Missing parameters" });
-
-        const { bookings, isFallback } = await getBookings();
-        const index = bookings.findIndex(b => b.id === bookingId);
-        if (index === -1) return res.status(404).json({ error: "Booking not found." });
-
-        if (action === "update-status") {
-            bookings[index].status = updatedData.status;
-        } else if (action === "reschedule") {
-            bookings[index].date = updatedData.date;
-            bookings[index].timeSlot = updatedData.timeSlot;
-        } else if (action === "delete") {
-            bookings.splice(index, 1);
-        } else {
-            return res.status(400).json({ error: "Invalid action" });
-        }
-
-        await saveBookings(bookings);
-        return res.status(200).json({ message: "Action successfully applied", bookings, isFallback });
-    } catch (err: any) {
-        return res.status(500).json({ error: err.message || "Failed to handle admin action." });
-    }
-});
-
-/** Admin Quotes List */
-app.get("/api/admin/quotes", authenticateAdmin, async (req, res) => {
-    try {
-        const { quotes, isFallback } = await getQuotes();
-        return res.status(200).json({ quotes, isFallback });
-    } catch (err: any) {
-        return res.status(500).json({ error: "Failed to retrieve quotes list." });
-    }
-});
-
-/** Admin Quote Actions */
-app.post("/api/admin/quotes", authenticateAdmin, async (req, res) => {
-    try {
-        const { action, quoteId, updatedData } = req.body || {};
-        if (!action || !quoteId) return res.status(400).json({ error: "Missing parameters" });
-
-        const { quotes, isFallback } = await getQuotes();
-        const index = quotes.findIndex(q => q.id === quoteId);
-        if (index === -1) return res.status(404).json({ error: "Quote not found." });
-
-        if (action === "update-status") {
-            quotes[index].status = updatedData.status;
-        } else if (action === "delete") {
-            quotes.splice(index, 1);
-        } else {
-            return res.status(400).json({ error: "Invalid action" });
-        }
-
-        await saveQuotes(quotes);
-        return res.status(200).json({ message: "Action successfully applied", quotes, isFallback });
-    } catch (err: any) {
-        return res.status(500).json({ error: "Failed to handle admin action." });
-    }
-});
+// Admin endpoints disabled - database functionality removed
 
 /**
  * Serve Front-end SPA static assets or hook hot Vite development layer
