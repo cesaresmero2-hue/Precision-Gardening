@@ -1,6 +1,5 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { Resend } from "resend";
 import crypto from "crypto";
@@ -538,6 +537,8 @@ app.post("/api/admin/quotes", authenticateAdmin, async (req, res) => {
  * Serve Front-end SPA static assets or hook hot Vite development layer
  */
 if (process.env.NODE_ENV !== "production") {
+    // Dynamic import so Vite is never required in production bundles
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
         server: { middlewareMode: true },
         appType: "spa",
